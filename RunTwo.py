@@ -14,24 +14,24 @@ tagname = input('input tage name: ' )
 
 insightlyurl = 'https://api.insight.ly/v2.2/Contacts/Search?'
 
-conn = sqlite3.connect(tagname + '_EmailList.sqlite')
-cur = conn.cursor()
+# conn = sqlite3.connect(tagname + '_ContactEmailList.sqlite')
+# cur = conn.cursor()
 
 # cur.execute('''
 # DROP TABLE IF EXISTS Contacts;
 # ''')
 
-cur.execute('''
-CREATE TABLE IF NOT EXISTS Contacts (
-    hospital TEXT,
-    hospital_ID TEXT,
-    first TEXT,
-    last TEXT,
-    role TEXT,
-    email TEXT,
-    data TEXT
-);
-''')
+# cur.execute('''
+# CREATE TABLE IF NOT EXISTS Contacts (
+#     hospital TEXT,
+#     hospital_ID TEXT,
+#     first TEXT,
+#     last TEXT,
+#     role TEXT,
+#     email TEXT,
+#     data TEXT
+# );
+# ''')
 
 # Ignore SSL certificate errors
 ctx = ssl.create_default_context()
@@ -39,7 +39,7 @@ ctx.check_hostname = False
 ctx.verify_mode = ssl.CERT_NONE
 
 # Openning a new CSV file so we can write in it
-fhand = open(tagname + '_EmailList.csv', 'w', newline='')
+fhand = open(tagname + '_ContactEmailList.csv', 'w', newline='')
 csvfhand = csv.writer(fhand)
 # We create headers for our new CSV file
 csvfhand.writerow(['Hospital','Hospital ID','Contact First Name','Contact Last Name','Contact Role','Contact Email'])
@@ -48,8 +48,8 @@ count = 0
 with open(tagname + "_OrgsList.csv") as fh:
     next(fh)
     for line in fh:
-        hosp = line.strip().strip("\"")
-        # print(hosp)
+        hosp = line.replace('"','').rstrip()
+        print(hosp)
 
         # cur.execute("SELECT * FROM Contacts WHERE hospital= ?",
         #     (hosp, ))
@@ -97,35 +97,37 @@ with open(tagname + "_OrgsList.csv") as fh:
             # print('')
             first = r["FIRST_NAME"]
             last = r["LAST_NAME"]
-            hospID = r["DEFAULT_LINKED_ORGANISATION"]
+            hospID = r["LINKS"][0]["ORGANISATION_ID"]
+            role = r["LINKS"][0]["ROLE"]
             try:
                 emaillist = list()
                 for ro in r["CONTACTINFOS"]:
                     if EMAIL_REGEX.match(ro["DETAIL"]):  # search for email, skip phone numbers
                         email = ro["DETAIL"]
                         emaillist.append(email)
+                        print(hosp)
+                        print(hospID)
+                        print(first)
+                        print(last)
+                        print(role)
                         print(email)
-                for rl in r["LINKS"]:
-                    role = rl["ROLE"]
-                pass
+                        csvfhand.writerow([hosp,hospID,first,last,role,email])
+                        continue
+                     else:
+                        email = ''
+                        continue
             except:
                 continue
 
             print(hosp)
             print(email)
-            # print(hospID)
-            # print(first)
-            # print(last)
-            # print(role)
-            # print(emaillist)
-            print('')
-            count = count + 1
+            count +=1
+
 
             # cur.execute('''INSERT INTO Contacts (hospital, hospital_ID, first, last, role, email, data)
             #         VALUES ( ?, ?, ?, ?, ?, ?, ? )''', (str(hosp), str(hospID), str(first), str(last), str(role), str(email), str(r)) )
             # conn.commit()
-            #
-            csvfhand.writerow([line,hospID,first,last,role,email])
+            
 
         if count % 10 == 0 :
             print('Pausing for a bit...')
@@ -136,5 +138,5 @@ with open(tagname + "_OrgsList.csv") as fh:
         print(dumps_total, 'total Records available.')
         print('')
 
-cur.close()
-# fhand.close()
+# cur.close()
+fhand.close()
