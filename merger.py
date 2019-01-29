@@ -11,3 +11,4 @@ with open(tagname + '_Filtered.csv', 'w') as output:
     pd.merge(df1, df2, on='Hospital ID').to_csv(output, index=False)
 
 print('======Merger.py complete======')
+print('Make sure to check for and remove any duplicate records')
