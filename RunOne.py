@@ -19,7 +19,7 @@ ctx = ssl.create_default_context()
 ctx.check_hostname = False
 ctx.verify_mode = ssl.CERT_NONE
 
-db = sqlite3.connect(tagname + '_Orgs.sqlite')  # Make sure to update to new SQL database
+db = sqlite3.connect(tagname + '_OrganizationsList.sqlite')  # Make sure to update to new SQL database
 cur = db.cursor()
 
 # Create a new database
@@ -35,11 +35,11 @@ CREATE TABLE IF NOT EXISTS Orgs (
 ''')
 #
 # # create a new CSV file
-fhand = open(tagname + '_OrgsList_with_Emails.csv', 'wb+', newline='')
+fhand = open(tagname + '_OrganizationsList_with_Emails.csv', 'wb+', newline='')
 csvfhand = csv.writer(fhand)
 csvfhand.writerow(['Hospital','Hospital Email','Hospital ID'])
 
-hosphand = open(tagname + '_OrgsList.csv', 'wb+', newline='')
+hosphand = open(tagname + '_OrganizationsList.csv', 'wb+', newline='')
 csvhosphand = csv.writer(hosphand)
 csvhosphand.writerow(['Hospital'])
 
