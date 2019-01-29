@@ -1,7 +1,7 @@
 import csv
 import pandas as pd
 
-tagname = input('input tage name: ' )
+tagname = input('input tag name: ' )
 
 
 df1 = pd.read_csv(tagname + '_OrganizationsList_with_IDs.csv')
