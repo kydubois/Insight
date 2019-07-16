@@ -9,59 +9,42 @@ import codecs
 import csv
 import pprint as pp
 import re
-from secrets import INuser_pass
 
 tagname = input('input tag name: ')
 
-insightlyurl = 'https://api.insight.ly/v2.2/Organisations/Search?'
+insightlyurl = 'https://api.insight.ly/v3.1/Organisations/SearchByTag?'
+
+with open('credentials.json', 'rb') as creds:
+    credentials = json.load(creds)
+
+    api_key = credentials['key'].encode('utf-8')
+    api_secret = credentials['secret'].encode('utf-8')
+    api_auth = api_key,api_secret
 
 ctx = ssl.create_default_context()
 ctx.check_hostname = False
 ctx.verify_mode = ssl.CERT_NONE
 
-db = sqlite3.connect(tagname + '_OrganizationsList.sqlite')  # Make sure to update to new SQL database
-cur = db.cursor()
-
-# Create a new database
-cur.execute('''
-DROP TABLE IF EXISTS Orgs;''')
-
-cur.execute('''
-CREATE TABLE IF NOT EXISTS Orgs (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-    hospital_ID TEXT,
-    hospital TEXT
-);
-''')
-#
 # # create a new CSV file
 fhand = open(tagname + '_OrganizationsList_with_Emails.csv', 'wb+', newline='')
 csvfhand = csv.writer(fhand)
-csvfhand.writerow(['Hospital','Hospital Email','Hospital ID'])
-
-hosphand = open(tagname + '_OrganizationsList.csv', 'wb+', newline='')
-csvhosphand = csv.writer(hosphand)
-csvhosphand.writerow(['Hospital'])
-
-IDhand = open(tagname + '_OrgnizationsList_with_IDs.csv', 'w', newline='', encoding='utf-8')
-csvIDhand = csv.writer(IDhand)
-csvIDhand.writerow(['Hospital', 'Hospital ID'])
+csvfhand.writerow(['Hospital','Hospital ID','State','Zip','Hospital Email'])
 
 count = 0
 while True:
 
 
     parms = dict()
-    parms['tag'] = tagname
+    parms['tagName'] = tagname
     parms['skip'] = count
     parms['top'] = 500
     parms['count_total'] = 'true'
 
     url = insightlyurl + urllib.parse.urlencode(parms)
 
-    print(url)
+    print('Retrieving', url)
 
-    uh = requests.get(url, auth = INuser_pass)
+    uh = requests.get(url, auth = api_auth)
 
     try:
         status = uh.status_code
@@ -87,13 +70,8 @@ while True:
         # hospname = hospname[2:-1]
         hospname = item['ORGANISATION_NAME']
         hospID = item['ORGANISATION_ID']
-
-        # print('length of tags ',len(item['TAGS']))
-        taglist = list()
-        for i in item['TAGS']:
-            tag = i['TAG_NAME']
-            # print(tag)
-            taglist.append(tag)
+        state = item["ADDRESS_SHIP_STATE"]
+        zipCode = item["ADDRESS_SHIP_POSTCODE"]
 
         # print('length of CUSTOMFIELDS ',len(item['CUSTOMFIELDS']))
         emaillist = list()
@@ -107,24 +85,18 @@ while True:
                 print(hospID)
                 print(email)
                 try:
-                    csvfhand.writerow([hospname,hospID,email])
+                    csvfhand.writerow([hospname,hospID,state,zipCode,email])
                 except:
                     continue
+                continue
             else:
                 email = ''
                 continue
 
-
-        cur.execute('''INSERT INTO Orgs (hospital_D, hospital)
-            VALUES ( ?, ?, ? );''', (str(hospID), str(hospname) ) )
-        db.commit()
-
         #write hospital name and email to csv
-        csvhosphand.writerow([hospname])
-        csvIDhand.writerow([hospname,hospID])
         count +=1
 
-    if count % 10 == 0:
+    if count % 2 == 0:
         print('Compiling Data...')
         time.sleep(5)
 
@@ -133,7 +105,5 @@ while True:
         print("Total of",count, "records written to database.")
         break
 
-cur.close()
 fhand.close()
-hosphand.close()
-IDhand.close()
+
